@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="申します。">
+<meta name="theme-color" content="#c2572b">
+<title>申します。</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:#f6f2ee;color:#2b2320;
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic UI",sans-serif}
+  body{padding-bottom:env(safe-area-inset-bottom)}
+
+  header{background:#c2572b;color:#fff;padding:14px 16px 12px;
+    padding-top:calc(14px + env(safe-area-inset-top))}
+  header h1{font-size:19px;letter-spacing:.02em}
+  header .cnt{font-size:12px;opacity:.85;margin-top:2px}
+
+  #toolbar{position:sticky;top:0;z-index:10;background:#f6f2ee;
+    padding:10px 12px 8px;border-bottom:1px solid #e8e0d8}
+  #q{width:100%;padding:11px 14px;border:1px solid #ddd;border-radius:24px;
+    font-size:16px;background:#fff;outline:none;-webkit-appearance:none}
+  #q:focus{border-color:#c2572b}
+  #chips{display:flex;gap:6px;overflow-x:auto;padding:8px 2px 2px;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  #chips::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto;padding:6px 13px;border-radius:16px;border:1px solid #d9cfc6;
+    background:#fff;color:#6b5a4e;font-size:13px;cursor:pointer}
+  .chip.on{background:#c2572b;border-color:#c2572b;color:#fff;font-weight:700}
+
+  #list{padding:10px 12px 30px;display:flex;flex-direction:column;gap:10px}
+  .card{background:#fff;border-radius:14px;padding:13px 15px;cursor:pointer;
+    box-shadow:0 1px 4px rgba(80,50,30,.10);-webkit-tap-highlight-color:transparent;
+    transition:transform .08s}
+  .card:active{transform:scale(.985)}
+  .card-top{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+  .card-date{font-size:12px;color:#9a8b80}
+  .badge{font-size:11px;background:#f3e3d8;color:#a14e22;
+    padding:2px 9px;border-radius:10px}
+  .card-n{margin-left:auto;font-size:11px;color:#b3a79d}
+  .shop{font-weight:700;font-size:16px;line-height:1.4;word-break:break-word}
+  .addr{font-size:12.5px;color:#7d6f64;margin-top:3px;word-break:break-word}
+  .memo{font-size:12.5px;color:#9a8b80;margin-top:4px;line-height:1.5;word-break:break-word}
+
+  #status{padding:40px 24px;text-align:center;color:#8a7d72;font-size:14px;line-height:1.8}
+  #status button{margin-top:14px;padding:10px 26px;border:0;border-radius:22px;
+    background:#c2572b;color:#fff;font-size:14px;font-weight:700;cursor:pointer}
+
+  /* ===== 投稿プレビュー窓 ===== */
+  body.pm-open{overflow:hidden}
+  #pmBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;
+    pointer-events:none;transition:opacity .2s;z-index:9998;
+    -webkit-tap-highlight-color:transparent}
+  #pmBackdrop.on{opacity:1;pointer-events:auto}
+  #pmSheet{position:fixed;left:0;right:0;bottom:0;z-index:9999;background:#fff;
+    border-radius:18px 18px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.25);
+    transform:translateY(100%);transition:transform .26s cubic-bezier(.22,.8,.28,1);
+    max-height:90vh;display:flex;flex-direction:column;
+    padding-bottom:env(safe-area-inset-bottom)}
+  #pmSheet.on{transform:translateY(0)}
+  @media(min-width:700px){
+    #pmSheet{left:50%;right:auto;bottom:auto;top:50%;width:440px;max-height:84vh;
+      border-radius:16px;transform:translate(-50%,-46%) scale(.96);opacity:0;
+      transition:transform .2s,opacity .2s}
+    #pmSheet.on{transform:translate(-50%,-50%) scale(1);opacity:1}
+  }
+  .pm-grip{width:38px;height:4px;border-radius:2px;background:#ddd;margin:9px auto 0;flex:0 0 auto}
+  .pm-head{display:flex;align-items:flex-start;gap:10px;padding:10px 15px 10px;
+    border-bottom:1px solid #eee;flex:0 0 auto}
+  .pm-titles{min-width:0}
+  .pm-shop{font-weight:700;font-size:15.5px;line-height:1.35;word-break:break-word}
+  .pm-sub{font-size:12px;color:#9a8b80;margin-top:2px}
+  .pm-close{margin-left:auto;flex:0 0 auto;border:0;background:#f2f2f2;color:#555;
+    width:30px;height:30px;border-radius:50%;font-size:15px;line-height:1;cursor:pointer}
+  .pm-body{overflow:auto;-webkit-overflow-scrolling:touch;
+    padding:12px 14px calc(20px + env(safe-area-inset-bottom))}
+  #pmInfo{font-size:12.5px;color:#7d6f64;line-height:1.6;margin-bottom:10px;word-break:break-word}
+  #pmTabs{display:none;gap:6px;margin-bottom:10px}
+  .pm-tab{flex:1;padding:8px 0;border:1px solid #ddd;border-radius:10px;background:#fafafa;
+    color:#6b5a4e;font-size:13px;cursor:pointer}
+  .pm-tab.on{background:#c2572b;border-color:#c2572b;color:#fff;font-weight:700}
+  .pm-body .twitter-tweet,.pm-body .instagram-media{margin:0 auto !important;
+    width:100% !important;max-width:420px !important}
+  .pm-none{text-align:center;color:#999;font-size:13px;padding:22px 10px;line-height:1.8}
+  .pm-loading{text-align:center;color:#999;font-size:13px;padding:26px 0}
+  .pm-actions{display:flex;gap:8px;margin-top:14px}
+  .pm-link{flex:1;display:block;text-align:center;padding:13px 6px;border-radius:12px;
+    background:#c2572b;color:#fff;font-weight:700;text-decoration:none;font-size:14px}
+  .pm-map{flex:0 0 auto;display:block;text-align:center;padding:13px 14px;border-radius:12px;
+    background:#f0e8e1;color:#7a5c46;font-weight:700;text-decoration:none;font-size:14px;
+    text-decoration:none}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>申します。</h1>
+  <div class="cnt" id="cnt">読み込み中…</div>
+</header>
+
+<div id="toolbar">
+  <input id="q" type="search" placeholder="店名・住所・メモで検索" autocomplete="off">
+  <div id="chips"></div>
+</div>
+
+<main id="list"></main>
+<div id="status">読み込み中…</div>
+
+<!-- 投稿プレビュー窓 -->
+<div id="pmBackdrop"></div>
+<div id="pmSheet" role="dialog" aria-modal="true">
+  <div class="pm-grip"></div>
+  <div class="pm-head">
+    <div class="pm-titles">
+      <div class="pm-shop" id="pmShop"></div>
+      <div class="pm-sub" id="pmSub"></div>
+    </div>
+    <button class="pm-close" id="pmClose" aria-label="閉じる">✕</button>
+  </div>
+  <div class="pm-body">
+    <div id="pmInfo"></div>
+    <div id="pmTabs"></div>
+    <div id="pmEmbed"><div class="pm-loading">読み込み中…</div></div>
+    <div class="pm-actions">
+      <a id="pmMap" class="pm-map" target="_blank" rel="noopener">地図</a>
+      <a id="pmOpen" class="pm-link" target="_blank" rel="noopener">投稿を開く</a>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ===== 設定 ===== */
+const CSV_URL   = 'https://docs.google.com/spreadsheets/d/1AaGzLA5FU8B_otkAZK2y34YOe4iy1CionPpBQFXcoWM/gviz/tq?tqx=out:csv&gid=1055155286';
+const CACHE_KEY = 'mousimasu_cache_v1';
+
+const $ = s => document.querySelector(s);
+let ROWS = [], filtered = [], activeCat = 'すべて';
+
+/* ===== CSVパーサ（"Quoted, 中のカンマ"対応） ===== */
+function parseCSV(text){
+  const rows = []; let row = [], cur = '', inQ = false;
+  for (let i = 0; i < text.length; i++){
+    const c = text[i];
+    if (inQ){
+      if (c === '"'){ if (text[i+1] === '"'){ cur += '"'; i++; } else inQ = false; }
+      else cur += c;
+    } else {
+      if (c === '"') inQ = true;
+      else if (c === ','){ row.push(cur); cur = ''; }
+      else if (c === '\n' || c === '\r'){
+        if (c === '\r' && text[i+1] === '\n') i++;
+        row.push(cur); cur = '';
+        if (row.some(v => v.trim() !== '')) rows.push(row);
+        row = [];
+      } else cur += c;
+    }
+  }
+  row.push(cur);
+  if (row.some(v => v.trim() !== '')) rows.push(row);
+  return rows;
+}
+
+/* ===== 行データ化 ===== */
+const esc = s => (s||'').replace(/[&<>"']/g, m =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const splitURLs = cell => (cell||'').split(/[\s\u3000]+/)
+  .map(u => u.trim()).filter(u => /^https?:\/\//i.test(u));
+
+function dateToNum(s){
+  const m = (s||'').match(/(\d{4})[\/\-年](\d{1,2})[\/\-月](\d{1,2})/);
+  return m ? (+m[1])*10000 + (+m[2])*100 + (+m[3]) : 0;
+}
+
+function toRows(rows){
+  const out = [];
+  for (const r of rows){
+    const g = n => (r[n] || '').trim();
+    const date = g(0);
+    if (date.indexOf('【編集ルール】') === 0 || date === '投稿日') continue;
+    const urls = [];
+    for (let k = 1; k <= 5; k++) urls.push(...splitURLs(g(k)));
+    const cat = g(6), shop = g(7), addr = g(8), memo = g(9);
+    if (!date && !shop && !urls.length) continue;
+    out.push({date, urls, cat, shop, addr, memo, t: dateToNum(date)});
+  }
+  out.sort((a,b) => (b.t||0) - (a.t||0));   // 新しい順
+  return out;
+}
+
+/* ===== 一覧まわり ===== */
+function renderChips(){
+  const map = {};
+  ROWS.forEach(r => { if (r.cat) map[r.cat] = (map[r.cat]||0)+1; });
+  const cats = Object.keys(map).sort((a,b) => map[b]-map[a]);
+  $('#chips').innerHTML = ['すべて'].concat(cats).map(c =>
+    `<button class="chip${c===activeCat?' on':''}" data-c="${esc(c)}">${esc(c)}</button>`).join('');
+}
+
+function renderList(){
+  if (!filtered.length){
+    $('#list').innerHTML = '<div id="status">該当する投稿がありません</div>';
+    return;
+  }
+  $('#list').innerHTML = filtered.map((r,i) => `
+    <article class="card" data-i="${i}">
+      <div class="card-top">
+        <span class="card-date">${esc(r.date)}</span>
+        ${r.cat ? `<span class="badge">${esc(r.cat)}</span>` : ''}
+        ${r.urls.length ? `<span class="card-n">投稿${r.urls.length}件</span>` : ''}
+      </div>
+      <div class="shop">${esc(r.shop || '不明')}</div>
+      ${r.addr ? `<div class="addr">${esc(r.addr)}</div>` : ''}
+      ${r.memo ? `<div class="memo">${esc(r.memo)}</div>` : ''}
+    </article>`).join('');
+}
+
+function applyFilter(){
+  const q = $('#q').value.trim().toLowerCase();
+  filtered = ROWS.filter(r => {
+    if (activeCat !== 'すべて' && r.cat !== activeCat) return false;
+    if (!q) return true;
+    return (r.date+' '+r.cat+' '+r.shop+' '+r.addr+' '+r.memo).toLowerCase().includes(q);
+  });
+  renderList();
+}
+
+function boot(){
+  $('#cnt').textContent = `全${ROWS.length}件`;
+  $('#status').style.display = 'none';
+  renderChips();
+  applyFilter();
+}
+
+/* ===== 取得（起動時に必ず最新を取りにいく。失敗時は前回分で表示） ===== */
+async function loadData(){
+  try{
+    const res = await fetch(CSV_URL + '&_=' + Date.now(), {cache:'no-store'});
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    ROWS = toRows(parseCSV(text));
+    try{ localStorage.setItem(CACHE_KEY, text); }catch(e){}
+    boot();
+  }catch(err){
+    let cached = null;
+    try{ cached = localStorage.getItem(CACHE_KEY); }catch(e){}
+    if (cached){ ROWS = toRows(parseCSV(cached)); boot(); }
+    else {
+      $('#cnt').textContent = '';
+      $('#list').innerHTML = '';
+      $('#status').style.display = 'block';
+      $('#status').innerHTML =
+        'スプレッドシートを取得できませんでした。<br>共有設定が「リンクを知っている全員」になっているか確認してください<br><br>' +
+        '<button onclick="loadData()">再読み込み</button>';
+    }
+  }
+}
+
+/* ===== 窓（モーダル） ===== */
+let cur = null, curTab = 0;
+const loaded = {};
+function loadScript(src){
+  if (loaded[src]) return Promise.resolve();
+  return new Promise(res => {
+    const s = document.createElement('script');
+    s.src = src; s.async = true;
+    s.onload = () => { loaded[src] = 1; res(); };
+    s.onerror = () => { loaded[src] = 1; res(); };
+    document.body.appendChild(s);
+  });
+}
+const kind = u =>
+  /x\.com|twitter\.com/.test(u) ? 'x'  :
+  /instagram\.com/.test(u)      ? 'ig' :
+  /threads\./.test(u)           ? 'th' : 'web';
+
+function renderEmbed(url){
+  const box = $('#pmEmbed');
+  const k = kind(url);
+  if (k === 'x'){
+    const m = url.match(/status\/(\d+)/);
+    const clean = m ? 'https://x.com/i/status/' + m[1] : url;
+    box.innerHTML = '<blockquote class="twitter-tweet" data-dnt="true" data-lang="ja" ' +
+      'data-conversation="none"><a href="' + esc(clean) + '"></a></blockquote>';
+    loadScript('https://platform.twitter.com/widgets.js').then(() => {
+      if (window.twttr && twttr.widgets) twttr.widgets.load(box);
+    });
+  } else if (k === 'ig'){
+    box.innerHTML = '<blockquote class="instagram-media" data-instgrm-captioned ' +
+      'data-instgrm-permalink="' + esc(url.split('?')[0]) + '" data-instgrm-version="14"></blockquote>';
+    loadScript('https://www.instagram.com/embed.js').then(() => {
+      if (window.instgrm && instgrm.Embeds) instgrm.Embeds.process();
+    });
+  } else {
+    box.innerHTML = '<div class="pm-none">この投稿は窓の中でのプレビューに対応していません<br>下のボタンから開いてください</div>';
+  }
+  $('#pmOpen').href = url;
+  $('#pmOpen').textContent = {x:'Xで投稿を開く', ig:'Instagramで開く', th:'Threadsで開く', web:'投稿を開く'}[k];
+}
+
+function renderTabs(){
+  const t = $('#pmTabs');
+  if (cur.urls.length > 1){
+    t.style.display = 'flex';
+    t.innerHTML = cur.urls.map((u,i) =>
+      `<button class="pm-tab${i===curTab?' on':''}" data-t="${i}">投稿${i+1}</button>`).join('');
+  } else { t.style.display = 'none'; t.innerHTML = ''; }
+}
+
+function openCard(i){
+  cur = filtered[i]; curTab = 0;
+  if (!cur) return;
+  $('#pmShop').textContent = cur.shop || '不明';
+  $('#pmSub').textContent = [cur.date, cur.cat].filter(Boolean).join('・');
+  $('#pmInfo').innerHTML =
+    (cur.addr ? '📍' + esc(cur.addr) + '<br>' : '') +
+    (cur.memo ? esc(cur.memo) : '');
+  const mapBtn = $('#pmMap');
+  const mapOK = cur.addr && cur.addr !== '不明' && cur.addr !== 'チェーン店' &&
+    /[県府郡市区块町村丁字通[0-9０-９]/.test(cur.addr);
+  if (mapOK){
+    mapBtn.style.display = 'block';
+    mapBtn.href = 'https://www.google.com/maps/search/?api=1&query=' +
+      encodeURIComponent(cur.addr + ' ' + (cur.shop || ''));
+  } else mapBtn.style.display = 'none';
+
+  renderTabs();
+  $('#pmEmbed').innerHTML = '<div class="pm-loading">読み込み中…</div>';
+  $('#pmOpen').href = cur.urls[0] || '#';
+  $('#pmOpen').textContent = '投稿を開く';
+  if (cur.urls.length) renderEmbed(cur.urls[0]);
+  else $('#pmEmbed').innerHTML = '<div class="pm-none">この行には投稿リンクがありません</div>';
+
+  $('#pmBackdrop').classList.add('on');
+  $('#pmSheet').classList.add('on');
+  document.body.classList.add('pm-open');
+}
+function closeCard(){
+  $('#pmBackdrop').classList.remove('on');
+  $('#pmSheet').classList.remove('on');
+  document.body.classList.remove('pm-open');
+  $('#pmEmbed').innerHTML = '';   // 動画などを止める
+}
+
+/* ===== イベント ===== */
+$('#list').addEventListener('click', e => {
+  const c = e.target.closest('.card');
+  if (c) openCard(+c.dataset.i);
+});
+$('#chips').addEventListener('click', e => {
+  const b = e.target.closest('.chip');
+  if (!b) return;
+  activeCat = b.dataset.c;
+  renderChips();
+  applyFilter();
+});
+let tmr;
+$('#q').addEventListener('input', () => {
+  clearTimeout(tmr); tmr = setTimeout(applyFilter, 120);
+});
+$('#pmTabs').addEventListener('click', e => {
+  const b = e.target.closest('.pm-tab');
+  if (!b || !cur) return;
+  curTab = +b.dataset.t;
+  renderTabs();
+  $('#pmEmbed').innerHTML = '<div class="pm-loading">読み込み中…</div>';
+  renderEmbed(cur.urls[curTab]);
+});
+$('#pmClose').addEventListener('click', closeCard);
+$('#pmBackdrop').addEventListener('click', closeCard);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCard(); });
+
+/* ===== 起動：キャッシュがあれば即表示→裏で最新取得 ===== */
+(async function init(){
+  let cached = null;
+  try{ cached = localStorage.getItem(CACHE_KEY); }catch(e){}
+  if (cached){
+    ROWS = toRows(parseCSV(cached));
+    boot();
+  }
+  loadData();
+})();
+</script>
+</body>
+</html>
